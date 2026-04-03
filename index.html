@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManhwaBoxd | Pink Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@400;700&display=swap');
+        
+        :root {
+            --pink-dark: #ff85a1;
+            --pink-mid: #ffafcc;
+            --pink-light: #fde2e4;
+            --bg: #fff1f2;
+        }
+
+        body { background-color: var(--bg); color: #5c4d50; font-family: 'Outfit', sans-serif; transition: all 0.3s ease; }
+        .pink-text { color: #ff5c8a; }
+        .bg-pink-main { background-color: #ff85a1; }
+        .card { background: white; border: 2px solid #ffcad4; border-radius: 1.5rem; }
+        
+        input, select, textarea { 
+            background-color: white !important; 
+            border: 2px solid #ffcad4 !important; 
+            color: #5c4d50 !important; 
+            outline: none;
+            border-radius: 0.75rem !important;
+        }
+        input:focus, textarea:focus { border-color: #ff85a1 !important; }
+        
+        .status-Reading { background: #90e0ef; color: #0077b6; }
+        .status-Read { background: #b7e4c7; color: #2d6a4f; }
+        .status-Want { background: #ffd8be; color: #974711; }
+        
+        .hidden { display: none; }
+        .poster-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
+        .list-card:hover { border-color: #ff85a1; cursor: pointer; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <nav class="bg-white p-4 border-b-4 border-[#ffcad4] sticky top-0 z-40 shadow-sm">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-black text-[#ff5c8a] tracking-tight cursor-pointer flex items-center gap-2" onclick="showSection('diary')">
+                <i class="fa-solid fa-heart"></i> READ <span class="text-pink-200"> LIST </span>
+            </h1>
+            <div class="flex items-center gap-6 text-xs font-bold uppercase tracking-widest">
+                <span onclick="showSection('diary')" class="cursor-pointer hover:text-[#ff5c8a] transition">Diary</span>
+                <span onclick="showSection('lists')" class="cursor-pointer hover:text-[#ff5c8a] transition">Lists</span>
+                <button onclick="openLogModal()" class="bg-pink-main text-white px-5 py-2 rounded-full font-black shadow-lg hover:scale-105 transition">+ LOG</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto px-4 mt-8">
+        <section id="diary-section">
+            <h3 class="text-lg font-black text-[#ff85a1] mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                <i class="fa-solid fa-book-open"></i> My Collection
+            </h3>
+            <div id="manga-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6"></div>
+        </section>
+
+        <section id="lists-section" class="hidden">
+            <h3 class="text-lg font-black text-[#ff85a1] mb-6 uppercase tracking-tighter">Reading Lists</h3>
+            <div id="lists-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+
+        <section id="single-list-section" class="hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <button onclick="showSection('lists')" class="text-xs font-black text-pink-300 hover:text-pink-500 mb-2 flex items-center gap-1 uppercase">
+                        <i class="fa-solid fa-chevron-left"></i> Back to Lists
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <h2 id="list-view-title" class="text-3xl font-black text-[#ff5c8a] tracking-tighter italic uppercase">List Name</h2>
+                        <button onclick="openEditListModal()" class="text-pink-300 hover:text-pink-500"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </div>
+                </div>
+                <button onclick="deleteCurrentList()" class="text-[10px] font-black bg-red-100 text-red-400 px-4 py-2 rounded-full hover:bg-red-200 transition uppercase tracking-widest">Delete List</button>
+            </div>
+            <div id="list-items-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6"></div>
+        </section>
+    </div>
+
+    <div id="log-modal" class="hidden fixed inset-0 bg-pink-200/60 z-50 flex items-center justify-center p-4 backdrop-blur-md overflow-y-auto">
+        <div class="bg-white w-full max-w-lg p-8 rounded-[2rem] border-4 border-[#ffcad4] relative shadow-2xl">
+            <button onclick="closeModal('log-modal')" class="absolute top-6 right-6 text-pink-300 hover:text-pink-500">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+            <h2 id="modal-title" class="text-[#ff5c8a] text-2xl font-black mb-6 italic uppercase tracking-tighter">LOG ENTRY</h2>
+            
+            <form id="manga-form" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <div class="flex gap-6">
+                    <div id="drop-zone" class="w-36 h-52 border-4 border-dashed border-pink-100 rounded-2xl flex flex-col items-center justify-center text-center p-2 relative overflow-hidden bg-pink-50">
+                        <img id="preview-img" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <div id="drop-text" class="text-[10px] font-bold uppercase text-pink-300">
+                            <i class="fa-solid fa-wand-magic-sparkles mb-2 text-2xl"></i><br>Paste Image<br>(Ctrl+V)
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 space-y-3">
+                        <input type="text" id="title" placeholder="Manhwa Title" required class="w-full p-3 text-sm font-bold">
+                        <input type="text" id="genre" placeholder="Genre" class="w-full p-3 text-sm">
+                        <div class="grid grid-cols-1 gap-2">
+                            <label class="text-[10px] font-black text-pink-400 ml-1">STATUS</label>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="setStatus('Reading')" class="status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Reading">READING</button>
+                                <button type="button" onclick="setStatus('Read')" class="status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Read">READ</button>
+                                <button type="button" onclick="setStatus('Want to Read')" class="status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Want to Read">WANT</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="cover-data">
+                <textarea id="desc" placeholder="Write your thoughts here..." class="w-full p-4 rounded-xl h-24 text-sm"></textarea>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-pink-400 ml-1 uppercase">Rating</label>
+                        <select id="rating" class="w-full p-3 font-bold text-pink-500"><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-pink-400 ml-1 uppercase">Add to List</label>
+                        <select id="list-select" class="w-full p-3 text-sm" onchange="toggleNewListInput()"><option value="">None</option><option value="NEW">+ Create New...</option></select>
+                    </div>
+                </div>
+                <input type="text" id="new-list-name" placeholder="New List Name" class="hidden w-full p-3 text-sm border-pink-400">
+                <button type="submit" class="w-full bg-pink-main text-white font-black py-4 rounded-2xl hover:brightness-105 transition uppercase tracking-widest shadow-lg">Save Entry</button>
+                <button type="button" id="delete-btn" onclick="deleteEntry()" class="hidden w-full text-pink-300 text-xs font-bold py-2 mt-2 hover:text-red-400 uppercase">Delete Permanently</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-list-modal" class="hidden fixed inset-0 bg-pink-200/60 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[2rem] border-4 border-[#ffcad4] shadow-2xl text-center">
+            <h3 class="text-[#ff5c8a] text-xl font-black mb-4 italic uppercase">Rename List</h3>
+            <input type="text" id="rename-list-input" class="w-full p-3 mb-4 text-center font-bold">
+            <div class="flex gap-2">
+                <button onclick="closeModal('edit-list-modal')" class="flex-1 text-pink-300 font-bold">Cancel</button>
+                <button onclick="saveListName()" class="flex-1 bg-pink-main text-white font-black py-2 rounded-xl">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let library = JSON.parse(localStorage.getItem('mb-lib')) || [];
+        let playlists = JSON.parse(localStorage.getItem('mb-lists')) || [];
+        let selectedStatus = 'Read';
+        let currentViewingListId = null;
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function openLogModal(editId = null) {
+            const modal = document.getElementById('log-modal');
+            const form = document.getElementById('manga-form');
+            const delBtn = document.getElementById('delete-btn');
+            form.reset();
+            resetFormVisuals();
+            populateListDropdown();
+            modal.classList.remove('hidden');
+
+            if (editId) {
+                const item = library.find(i => i.id === editId);
+                document.getElementById('edit-id').value = item.id;
+                document.getElementById('title').value = item.title;
+                document.getElementById('genre').value = item.genre;
+                document.getElementById('desc').value = item.desc;
+                document.getElementById('cover-data').value = item.cover;
+                document.getElementById('rating').value = item.rating;
+                document.getElementById('preview-img').src = item.cover;
+                document.getElementById('preview-img').classList.remove('hidden');
+                document.getElementById('drop-text').classList.add('hidden');
+                setStatus(item.status);
+                delBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('edit-id').value = '';
+                delBtn.classList.add('hidden');
+                setStatus('Read');
+            }
+        }
+
+        function setStatus(status) {
+            selectedStatus = status;
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                btn.className = "status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50 transition-all";
+                if(btn.dataset.status === status) btn.classList.add('bg-pink-main', 'text-white', 'border-pink-main', 'shadow-md');
+            });
+        }
+
+        window.addEventListener('paste', e => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (const item of items) {
+                if (item.type.indexOf("image") !== -1) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('preview-img').src = event.target.result;
+                        document.getElementById('preview-img').classList.remove('hidden');
+                        document.getElementById('drop-text').classList.add('hidden');
+                        document.getElementById('cover-data').value = event.target.result;
+                    };
+                    reader.readAsDataURL(item.getAsFile());
+                }
+            }
+        });
+
+        function resetFormVisuals() {
+            document.getElementById('preview-img').classList.add('hidden');
+            document.getElementById('drop-text').classList.remove('hidden');
+            document.getElementById('cover-data').value = '';
+        }
+
+        function toggleNewListInput() {
+            document.getElementById('new-list-name').classList.toggle('hidden', document.getElementById('list-select').value !== 'NEW');
+        }
+
+        function populateListDropdown() {
+            const select = document.getElementById('list-select');
+            select.innerHTML = '<option value="">None</option><option value="NEW">+ Create New...</option>';
+            playlists.forEach(list => {
+                const opt = document.createElement('option');
+                opt.value = list.id;
+                opt.textContent = list.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function showSection(section, listId = null) {
+            document.getElementById('diary-section').classList.add('hidden');
+            document.getElementById('lists-section').classList.add('hidden');
+            document.getElementById('single-list-section').classList.add('hidden');
+
+            if(section === 'diary') {
+                document.getElementById('diary-section').classList.remove('hidden');
+                renderDiary();
+            } else if(section === 'lists') {
+                document.getElementById('lists-section').classList.remove('hidden');
+                renderLists();
+            } else if(section === 'view-list') {
+                currentViewingListId = listId;
+                document.getElementById('single-list-section').classList.remove('hidden');
+                renderSingleList(listId);
+            }
+        }
+
+        document.getElementById('manga-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const listChoice = document.getElementById('list-select').value;
+            
+            const itemData = {
+                id: editId ? Number(editId) : Date.now(),
+                title: document.getElementById('title').value,
+                genre: document.getElementById('genre').value || 'Uncategorized',
+                desc: document.getElementById('desc').value,
+                cover: document.getElementById('cover-data').value || 'https://via.placeholder.com/200x300?text=No+Cover',
+                rating: document.getElementById('rating').value,
+                status: selectedStatus
+            };
+
+            if(editId) {
+                const idx = library.findIndex(i => i.id === Number(editId));
+                library[idx] = itemData;
+            } else {
+                library.unshift(itemData);
+            }
+
+            if(listChoice === 'NEW') {
+                const newName = document.getElementById('new-list-name').value;
+                if(newName) playlists.push({ id: Date.now() + 1, name: newName, items: [itemData.id] });
+            } else if(listChoice !== "") {
+                const list = playlists.find(l => l.id === Number(listChoice));
+                if(list && !list.items.includes(itemData.id)) list.items.push(itemData.id);
+            }
+
+            localStorage.setItem('mb-lib', JSON.stringify(library));
+            localStorage.setItem('mb-lists', JSON.stringify(playlists));
+            closeModal('log-modal');
+            
+            // Refresh wherever we are
+            if (!document.getElementById('single-list-section').classList.contains('hidden')) {
+                renderSingleList(currentViewingListId);
+            } else {
+                showSection('diary');
+            }
+        });
+
+        function deleteEntry() {
+            const id = Number(document.getElementById('edit-id').value);
+            if(confirm('Delete this entry?')) {
+                library = library.filter(i => i.id !== id);
+                playlists.forEach(l => l.items = l.items.filter(itemId => itemId !== id));
+                saveAll();
+                closeModal('log-modal');
+                renderDiary();
+                if(currentViewingListId) renderSingleList(currentViewingListId);
+            }
+        }
+
+        // --- LIST MANAGEMENT ---
+        function openEditListModal() {
+            const list = playlists.find(l => l.id === currentViewingListId);
+            document.getElementById('rename-list-input').value = list.name;
+            document.getElementById('edit-list-modal').classList.remove('hidden');
+        }
+
+        function saveListName() {
+            const list = playlists.find(l => l.id === currentViewingListId);
+            list.name = document.getElementById('rename-list-input').value;
+            saveAll();
+            closeModal('edit-list-modal');
+            document.getElementById('list-view-title').textContent = list.name;
+        }
+
+        function deleteCurrentList() {
+            if(confirm('Delete this entire list? (Entries will stay in your collection)')) {
+                playlists = playlists.filter(l => l.id !== currentViewingListId);
+                saveAll();
+                showSection('lists');
+            }
+        }
+
+        function saveAll() {
+            localStorage.setItem('mb-lib', JSON.stringify(library));
+            localStorage.setItem('mb-lists', JSON.stringify(playlists));
+        }
+
+        function renderDiary() {
+            const grid = document.getElementById('manga-grid');
+            grid.innerHTML = '';
+            library.forEach(item => grid.innerHTML += createPosterHTML(item));
+        }
+
+        function renderLists() {
+            const container = document.getElementById('lists-container');
+            container.innerHTML = '';
+            playlists.forEach(list => {
+                const listItems = library.filter(m => list.items.includes(m.id));
+                container.innerHTML += `
+                    <div class="card p-6 list-card border-b-4 border-pink-200 transition" onclick="showSection('view-list', ${list.id})">
+                        <h4 class="text-[#ff5c8a] font-black mb-4 uppercase italic text-lg tracking-tight flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group"></i> ${list.name}
+                        </h4>
+                        <div class="flex -space-x-4 overflow-hidden">
+                            ${listItems.slice(0, 6).map(m => `<img src="${m.cover}" class="w-14 h-20 object-cover border-2 border-white rounded-lg shadow-md">`).join('')}
+                            ${listItems.length === 0 ? '<div class="text-[10px] uppercase font-bold text-pink-200">Empty List</div>' : ''}
+                        </div>
+                        <p class="text-[10px] font-black text-pink-300 uppercase mt-4 tracking-widest">${listItems.length} entries • Click to view</p>
+                    </div>
+                `;
+            });
+        }
+
+        function renderSingleList(listId) {
+            const list = playlists.find(l => l.id === listId);
+            document.getElementById('list-view-title').textContent = list.name;
+            const grid = document.getElementById('list-items-grid');
+            grid.innerHTML = '';
+            const listItems = library.filter(m => list.items.includes(m.id));
+            listItems.forEach(item => grid.innerHTML += createPosterHTML(item));
+        }
+
+        function createPosterHTML(item) {
+            return `
+                <div class="group cursor-pointer poster-hover" onclick="openLogModal(${item.id})">
+                    <div class="aspect-[2/3] rounded-2xl overflow-hidden border-4 border-white shadow-md relative">
+                        <img src="${item.cover}" class="w-full h-full object-cover">
+                        <div class="absolute top-2 right-2 status-${item.status.replace(/ /g, '')} text-[8px] font-black px-2 py-1 rounded-full shadow-sm uppercase">
+                            ${item.status}
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-pink-500/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                            <p class="text-white text-[10px] font-black uppercase truncate">${item.genre}</p>
+                            <p class="text-white text-xs font-bold truncate">${item.title}</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <span class="text-xs font-bold text-pink-400">${'★'.repeat(item.rating)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        showSection('diary');
+    </script>
+</body>
+</html>
