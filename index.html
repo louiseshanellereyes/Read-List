@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lou Reading List</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -16,40 +16,51 @@
             --bg: #fff1f2;
         }
 
-        body { background-color: var(--bg); color: #5c4d50; font-family: 'Outfit', sans-serif; transition: all 0.3s ease; }
-        .pink-text { color: #ff5c8a; }
+        body { 
+            background-color: var(--bg); 
+            color: #5c4d50; 
+            font-family: 'Outfit', sans-serif; 
+            -webkit-tap-highlight-color: transparent; /* Cleaner touch on mobile */
+        }
+        
         .bg-pink-main { background-color: #ff85a1; }
         .card { background: white; border: 2px solid #ffcad4; border-radius: 1.5rem; }
         
+        /* Mobile-friendly inputs: Font size must be at least 16px to prevent iOS zoom */
         input, select, textarea { 
             background-color: white !important; 
             border: 2px solid #ffcad4 !important; 
             color: #5c4d50 !important; 
             outline: none;
             border-radius: 0.75rem !important;
+            font-size: 16px !important; 
         }
-        input:focus, textarea:focus { border-color: #ff85a1 !important; }
         
         .status-Reading { background: #90e0ef; color: #0077b6; }
         .status-Read { background: #b7e4c7; color: #2d6a4f; }
         .status-Want { background: #ffd8be; color: #974711; }
         
         .hidden { display: none; }
-        .poster-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
-        .list-card:hover { border-color: #ff85a1; cursor: pointer; }
+        
+        /* Better scrolling for mobile modals */
+        .modal-scroll {
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body class="pb-20">
 
     <nav class="bg-white p-4 border-b-4 border-[#ffcad4] sticky top-0 z-40 shadow-sm">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-[#ff5c8a] tracking-tight cursor-pointer flex items-center gap-2" onclick="showSection('diary')">
+            <h1 class="text-xl md:text-2xl font-black text-[#ff5c8a] tracking-tight cursor-pointer flex items-center gap-2" onclick="showSection('diary')">
                 <i class="fa-solid fa-heart"></i> READ <span class="text-pink-200"> LIST </span>
             </h1>
-            <div class="flex items-center gap-6 text-xs font-bold uppercase tracking-widest">
-                <span onclick="showSection('diary')" class="cursor-pointer hover:text-[#ff5c8a] transition">Diary</span>
-                <span onclick="showSection('lists')" class="cursor-pointer hover:text-[#ff5c8a] transition">Lists</span>
-                <button onclick="openLogModal()" class="bg-pink-main text-white px-5 py-2 rounded-full font-black shadow-lg hover:scale-105 transition">+ LOG</button>
+            <div class="flex items-center gap-4 md:gap-6 text-[10px] md:text-xs font-bold uppercase tracking-widest">
+                <span onclick="showSection('diary')" class="cursor-pointer hover:text-[#ff5c8a]">Diary</span>
+                <span onclick="showSection('lists')" class="cursor-pointer hover:text-[#ff5c8a]">Lists</span>
+                <button onclick="openLogModal()" class="bg-pink-main text-white px-4 py-2 rounded-full font-black shadow-lg">+ LOG</button>
             </div>
         </div>
     </nav>
@@ -59,83 +70,95 @@
             <h3 class="text-lg font-black text-[#ff85a1] mb-6 flex items-center gap-2 uppercase tracking-tighter">
                 <i class="fa-solid fa-book-open"></i> My Collection
             </h3>
-            <div id="manga-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6"></div>
+            <div id="manga-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6"></div>
         </section>
 
         <section id="lists-section" class="hidden">
-            <h3 class="text-lg font-black text-[#ff85a1] mb-6 uppercase tracking-tighter">Reading Lists</h3>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-black text-[#ff85a1] uppercase tracking-tighter">Reading Lists</h3>
+                <div class="flex gap-2">
+                    <button onclick="exportData()" class="text-[9px] font-black bg-white border-2 border-pink-100 px-2 py-1 rounded-lg text-pink-300 uppercase">Export</button>
+                    <button onclick="document.getElementById('importFile').click()" class="text-[9px] font-black bg-white border-2 border-pink-100 px-2 py-1 rounded-lg text-pink-300 uppercase">Import</button>
+                    <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+                </div>
+            </div>
             <div id="lists-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </section>
 
         <section id="single-list-section" class="hidden">
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div class="flex flex-col mb-8 gap-4">
                 <div>
-                    <button onclick="showSection('lists')" class="text-xs font-black text-pink-300 hover:text-pink-500 mb-2 flex items-center gap-1 uppercase">
-                        <i class="fa-solid fa-chevron-left"></i> Back to Lists
+                    <button onclick="showSection('lists')" class="text-xs font-black text-pink-300 mb-2 flex items-center gap-1 uppercase">
+                        <i class="fa-solid fa-chevron-left"></i> Back
                     </button>
                     <div class="flex items-center gap-3">
-                        <h2 id="list-view-title" class="text-3xl font-black text-[#ff5c8a] tracking-tighter italic uppercase">List Name</h2>
-                        <button onclick="openEditListModal()" class="text-pink-300 hover:text-pink-500"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <h2 id="list-view-title" class="text-2xl md:text-3xl font-black text-[#ff5c8a] tracking-tighter italic uppercase">List Name</h2>
+                        <button onclick="openEditListModal()" class="text-pink-300"><i class="fa-solid fa-pen-to-square"></i></button>
                     </div>
                 </div>
-                <button onclick="deleteCurrentList()" class="text-[10px] font-black bg-red-100 text-red-400 px-4 py-2 rounded-full hover:bg-red-200 transition uppercase tracking-widest">Delete List</button>
+                <button onclick="deleteCurrentList()" class="w-max text-[10px] font-black bg-red-100 text-red-400 px-4 py-2 rounded-full uppercase tracking-widest">Delete List</button>
             </div>
-            <div id="list-items-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6"></div>
+            <div id="list-items-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6"></div>
         </section>
     </div>
 
-    <div id="log-modal" class="hidden fixed inset-0 bg-pink-200/60 z-50 flex items-center justify-center p-4 backdrop-blur-md overflow-y-auto">
-        <div class="bg-white w-full max-w-lg p-8 rounded-[2rem] border-4 border-[#ffcad4] relative shadow-2xl">
-            <button onclick="closeModal('log-modal')" class="absolute top-6 right-6 text-pink-300 hover:text-pink-500">
+    <div id="log-modal" class="hidden fixed inset-0 bg-pink-200/60 z-50 flex items-center justify-center p-2 md:p-4 backdrop-blur-md">
+        <div class="bg-white w-full max-w-lg p-6 md:p-8 rounded-[2rem] border-4 border-[#ffcad4] relative shadow-2xl modal-scroll">
+            <button onclick="closeModal('log-modal')" class="absolute top-4 right-4 text-pink-300">
                 <i class="fa-solid fa-circle-xmark text-2xl"></i>
             </button>
-            <h2 id="modal-title" class="text-[#ff5c8a] text-2xl font-black mb-6 italic uppercase tracking-tighter">LOG ENTRY</h2>
+            <h2 id="modal-title" class="text-[#ff5c8a] text-xl font-black mb-6 italic uppercase">LOG ENTRY</h2>
             
             <form id="manga-form" class="space-y-4">
                 <input type="hidden" id="edit-id">
-                <div class="flex gap-6">
-                    <div id="drop-zone" class="w-36 h-52 border-4 border-dashed border-pink-100 rounded-2xl flex flex-col items-center justify-center text-center p-2 relative overflow-hidden bg-pink-50">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div id="drop-zone" class="w-full sm:w-36 h-48 sm:h-52 border-4 border-dashed border-pink-100 rounded-2xl flex flex-col items-center justify-center text-center p-2 relative overflow-hidden bg-pink-50">
                         <img id="preview-img" class="absolute inset-0 w-full h-full object-cover hidden">
                         <div id="drop-text" class="text-[10px] font-bold uppercase text-pink-300">
-                            <i class="fa-solid fa-wand-magic-sparkles mb-2 text-2xl"></i><br>Paste Image<br>(Ctrl+V)
+                            <i class="fa-solid fa-image mb-2 text-2xl"></i><br>Paste Image or URL
                         </div>
                     </div>
                     
                     <div class="flex-1 space-y-3">
-                        <input type="text" id="title" placeholder="Manhwa Title" required class="w-full p-3 text-sm font-bold">
-                        <input type="text" id="genre" placeholder="Genre" class="w-full p-3 text-sm">
-                        <div class="grid grid-cols-1 gap-2">
+                        <input type="text" id="title" placeholder="Manhwa Title" required class="w-full p-3 font-bold">
+                        <input type="text" id="genre" placeholder="Genre" class="w-full p-3">
+                        <div>
                             <label class="text-[10px] font-black text-pink-400 ml-1">STATUS</label>
-                            <div class="flex gap-1">
-                                <button type="button" onclick="setStatus('Reading')" class="status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Reading">READING</button>
-                                <button type="button" onclick="setStatus('Read')" class="status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Read">READ</button>
-                                <button type="button" onclick="setStatus('Want to Read')" class="status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Want to Read">WANT</button>
+                            <div class="flex gap-1 mt-1">
+                                <button type="button" onclick="setStatus('Reading')" class="status-btn flex-1 text-[8px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Reading">READING</button>
+                                <button type="button" onclick="setStatus('Read')" class="status-btn flex-1 text-[8px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Read">READ</button>
+                                <button type="button" onclick="setStatus('Want to Read')" class="status-btn flex-1 text-[8px] font-black p-2 rounded-lg border-2 border-pink-50" data-status="Want to Read">WANT</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <input type="hidden" id="cover-data">
-                <textarea id="desc" placeholder="Write your thoughts here..." class="w-full p-4 rounded-xl h-24 text-sm"></textarea>
+                <textarea id="desc" placeholder="Thoughts..." class="w-full p-4 rounded-xl h-24"></textarea>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-pink-400 ml-1 uppercase">Rating</label>
-                        <select id="rating" class="w-full p-3 font-bold text-pink-500"><option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option></select>
+                        <select id="rating" class="w-full p-3 font-bold text-pink-500">
+                            <option value="5">★★★★★</option><option value="4">★★★★☆</option>
+                            <option value="3">★★★☆☆</option><option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option>
+                        </select>
                     </div>
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-pink-400 ml-1 uppercase">Add to List</label>
-                        <select id="list-select" class="w-full p-3 text-sm" onchange="toggleNewListInput()"><option value="">None</option><option value="NEW">+ Create New...</option></select>
+                        <select id="list-select" class="w-full p-3" onchange="toggleNewListInput()">
+                            <option value="">None</option><option value="NEW">+ New...</option>
+                        </select>
                     </div>
                 </div>
-                <input type="text" id="new-list-name" placeholder="New List Name" class="hidden w-full p-3 text-sm border-pink-400">
-                <button type="submit" class="w-full bg-pink-main text-white font-black py-4 rounded-2xl hover:brightness-105 transition uppercase tracking-widest shadow-lg">Save Entry</button>
-                <button type="button" id="delete-btn" onclick="deleteEntry()" class="hidden w-full text-pink-300 text-xs font-bold py-2 mt-2 hover:text-red-400 uppercase">Delete Permanently</button>
+                <input type="text" id="new-list-name" placeholder="New List Name" class="hidden w-full p-3 border-pink-400">
+                <button type="submit" class="w-full bg-pink-main text-white font-black py-4 rounded-2xl uppercase tracking-widest shadow-lg">Save Entry</button>
+                <button type="button" id="delete-btn" onclick="deleteEntry()" class="hidden w-full text-pink-300 text-xs font-bold py-2 uppercase">Delete Permanently</button>
             </form>
         </div>
     </div>
 
     <div id="edit-list-modal" class="hidden fixed inset-0 bg-pink-200/60 z-50 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white w-full max-w-sm p-8 rounded-[2rem] border-4 border-[#ffcad4] shadow-2xl text-center">
-            <h3 class="text-[#ff5c8a] text-xl font-black mb-4 italic uppercase">Rename List</h3>
+            <h3 class="text-[#ff5c8a] text-xl font-black mb-4 uppercase">Rename List</h3>
             <input type="text" id="rename-list-input" class="w-full p-3 mb-4 text-center font-bold">
             <div class="flex gap-2">
                 <button onclick="closeModal('edit-list-modal')" class="flex-1 text-pink-300 font-bold">Cancel</button>
@@ -150,12 +173,16 @@
         let selectedStatus = 'Read';
         let currentViewingListId = null;
 
+        function saveAll() {
+            localStorage.setItem('mb-lib', JSON.stringify(library));
+            localStorage.setItem('mb-lists', JSON.stringify(playlists));
+        }
+
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         
         function openLogModal(editId = null) {
             const modal = document.getElementById('log-modal');
             const form = document.getElementById('manga-form');
-            const delBtn = document.getElementById('delete-btn');
             form.reset();
             resetFormVisuals();
             populateListDropdown();
@@ -173,10 +200,10 @@
                 document.getElementById('preview-img').classList.remove('hidden');
                 document.getElementById('drop-text').classList.add('hidden');
                 setStatus(item.status);
-                delBtn.classList.remove('hidden');
+                document.getElementById('delete-btn').classList.remove('hidden');
             } else {
                 document.getElementById('edit-id').value = '';
-                delBtn.classList.add('hidden');
+                document.getElementById('delete-btn').classList.add('hidden');
                 setStatus('Read');
             }
         }
@@ -184,26 +211,31 @@
         function setStatus(status) {
             selectedStatus = status;
             document.querySelectorAll('.status-btn').forEach(btn => {
-                btn.className = "status-btn flex-1 text-[9px] font-black p-2 rounded-lg border-2 border-pink-50 transition-all";
-                if(btn.dataset.status === status) btn.classList.add('bg-pink-main', 'text-white', 'border-pink-main', 'shadow-md');
+                btn.className = "status-btn flex-1 text-[8px] font-black p-2 rounded-lg border-2 border-pink-50 transition-all";
+                if(btn.dataset.status === status) btn.classList.add('bg-pink-main', 'text-white', 'border-pink-main');
             });
         }
 
+        // Handle Paste (Desktop and Mobile URL Paste)
         window.addEventListener('paste', e => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (const item of items) {
                 if (item.type.indexOf("image") !== -1) {
                     const reader = new FileReader();
                     reader.onload = function(event) {
-                        document.getElementById('preview-img').src = event.target.result;
-                        document.getElementById('preview-img').classList.remove('hidden');
-                        document.getElementById('drop-text').classList.add('hidden');
-                        document.getElementById('cover-data').value = event.target.result;
+                        updatePreview(event.target.result);
                     };
                     reader.readAsDataURL(item.getAsFile());
                 }
             }
         });
+
+        function updatePreview(src) {
+            document.getElementById('preview-img').src = src;
+            document.getElementById('preview-img').classList.remove('hidden');
+            document.getElementById('drop-text').classList.add('hidden');
+            document.getElementById('cover-data').value = src;
+        }
 
         function resetFormVisuals() {
             document.getElementById('preview-img').classList.add('hidden');
@@ -217,7 +249,7 @@
 
         function populateListDropdown() {
             const select = document.getElementById('list-select');
-            select.innerHTML = '<option value="">None</option><option value="NEW">+ Create New...</option>';
+            select.innerHTML = '<option value="">None</option><option value="NEW">+ New...</option>';
             playlists.forEach(list => {
                 const opt = document.createElement('option');
                 opt.value = list.id;
@@ -242,6 +274,7 @@
                 document.getElementById('single-list-section').classList.remove('hidden');
                 renderSingleList(listId);
             }
+            window.scrollTo(0,0);
         }
 
         document.getElementById('manga-form').addEventListener('submit', (e) => {
@@ -274,11 +307,8 @@
                 if(list && !list.items.includes(itemData.id)) list.items.push(itemData.id);
             }
 
-            localStorage.setItem('mb-lib', JSON.stringify(library));
-            localStorage.setItem('mb-lists', JSON.stringify(playlists));
+            saveAll();
             closeModal('log-modal');
-            
-            // Refresh wherever we are
             if (!document.getElementById('single-list-section').classList.contains('hidden')) {
                 renderSingleList(currentViewingListId);
             } else {
@@ -288,7 +318,7 @@
 
         function deleteEntry() {
             const id = Number(document.getElementById('edit-id').value);
-            if(confirm('Delete this entry?')) {
+            if(confirm('Delete?')) {
                 library = library.filter(i => i.id !== id);
                 playlists.forEach(l => l.items = l.items.filter(itemId => itemId !== id));
                 saveAll();
@@ -298,7 +328,30 @@
             }
         }
 
-        // --- LIST MANAGEMENT ---
+        function exportData() {
+            const data = { library, playlists };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'lou-list-backup.json';
+            a.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = JSON.parse(e.target.result);
+                library = data.library;
+                playlists = data.playlists;
+                saveAll();
+                renderDiary();
+                alert('Data Imported!');
+            };
+            reader.readAsText(file);
+        }
+
         function openEditListModal() {
             const list = playlists.find(l => l.id === currentViewingListId);
             document.getElementById('rename-list-input').value = list.name;
@@ -314,16 +367,11 @@
         }
 
         function deleteCurrentList() {
-            if(confirm('Delete this entire list? (Entries will stay in your collection)')) {
+            if(confirm('Delete list?')) {
                 playlists = playlists.filter(l => l.id !== currentViewingListId);
                 saveAll();
                 showSection('lists');
             }
-        }
-
-        function saveAll() {
-            localStorage.setItem('mb-lib', JSON.stringify(library));
-            localStorage.setItem('mb-lists', JSON.stringify(playlists));
         }
 
         function renderDiary() {
@@ -338,15 +386,15 @@
             playlists.forEach(list => {
                 const listItems = library.filter(m => list.items.includes(m.id));
                 container.innerHTML += `
-                    <div class="card p-6 list-card border-b-4 border-pink-200 transition" onclick="showSection('view-list', ${list.id})">
+                    <div class="card p-6 list-card border-b-4 border-pink-100 transition" onclick="showSection('view-list', ${list.id})">
                         <h4 class="text-[#ff5c8a] font-black mb-4 uppercase italic text-lg tracking-tight flex items-center gap-2">
                             <i class="fa-solid fa-layer-group"></i> ${list.name}
                         </h4>
                         <div class="flex -space-x-4 overflow-hidden">
-                            ${listItems.slice(0, 6).map(m => `<img src="${m.cover}" class="w-14 h-20 object-cover border-2 border-white rounded-lg shadow-md">`).join('')}
+                            ${listItems.slice(0, 6).map(m => `<img src="${m.cover}" class="w-12 h-16 object-cover border-2 border-white rounded-lg shadow-md">`).join('')}
                             ${listItems.length === 0 ? '<div class="text-[10px] uppercase font-bold text-pink-200">Empty List</div>' : ''}
                         </div>
-                        <p class="text-[10px] font-black text-pink-300 uppercase mt-4 tracking-widest">${listItems.length} entries • Click to view</p>
+                        <p class="text-[10px] font-black text-pink-300 uppercase mt-4 tracking-widest">${listItems.length} entries</p>
                     </div>
                 `;
             });
@@ -363,19 +411,19 @@
 
         function createPosterHTML(item) {
             return `
-                <div class="group cursor-pointer poster-hover" onclick="openLogModal(${item.id})">
+                <div class="group cursor-pointer" onclick="openLogModal(${item.id})">
                     <div class="aspect-[2/3] rounded-2xl overflow-hidden border-4 border-white shadow-md relative">
                         <img src="${item.cover}" class="w-full h-full object-cover">
-                        <div class="absolute top-2 right-2 status-${item.status.replace(/ /g, '')} text-[8px] font-black px-2 py-1 rounded-full shadow-sm uppercase">
+                        <div class="absolute top-1 right-1 status-${item.status.replace(/ /g, '')} text-[7px] font-black px-2 py-0.5 rounded-full uppercase">
                             ${item.status}
                         </div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-pink-500/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                            <p class="text-white text-[10px] font-black uppercase truncate">${item.genre}</p>
-                            <p class="text-white text-xs font-bold truncate">${item.title}</p>
+                        <div class="absolute inset-0 bg-gradient-to-t from-pink-500/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                            <p class="text-white text-[8px] font-black uppercase truncate">${item.genre}</p>
+                            <p class="text-white text-[10px] font-bold truncate">${item.title}</p>
                         </div>
                     </div>
-                    <div class="mt-2 text-center">
-                        <span class="text-xs font-bold text-pink-400">${'★'.repeat(item.rating)}</span>
+                    <div class="mt-1 text-center">
+                        <span class="text-[10px] font-bold text-pink-400">${'★'.repeat(item.rating)}</span>
                     </div>
                 </div>
             `;
